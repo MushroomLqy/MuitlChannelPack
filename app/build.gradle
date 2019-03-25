@@ -1,0 +1,99 @@
+apply plugin: 'com.android.application'
+
+android {
+
+    /**接口环境配置*/
+    //正式环境
+    def API_RELEASE_HOST = "\"API_RELEASE_HOST\""
+    //UAT环境
+    def API_TEST_HOST = "\"API_TEST_HOST\""
+    //DEV环境
+    def API_DEV_HOST = "\"API_DEV_HOST\""
+    /**end*/
+
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "com.muitlchannelpack._360"
+        minSdkVersion 19
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        flavorDimensions "1"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            keyAlias RELEASE_KEY_ALIAS
+            keyPassword RELEASE_KEY_PASSWORD
+            storeFile file(RELEASE_STORE_FILE)
+            storePassword RELEASE_STORE_PASSWORD
+        }
+    }
+
+    //productFlavors主要是用来做多渠道打包
+    productFlavors {
+        anzhi {
+            applicationId "com.muitlchannelpack.anzhi.jks"
+            manifestPlaceholders = [
+                    UMENG_APPKEY : UM_ANZHI,
+                    UMENG_CHANNEL: ANZHI,
+            ]
+        }
+        wandoujia {
+            applicationId "com.muitlchannelpack.wandoujia"
+            manifestPlaceholders = [
+                    UMENG_APPKEY : UM_HUAWEI,
+                    UMENG_CHANNEL: WANDOUJIA,
+            ]
+        }
+        huawei {
+            applicationId "com.muitlchannelpack.huawei"
+            manifestPlaceholders = [
+                    UMENG_APPKEY : UM_WANDOUJIA,
+                    UMENG_CHANNEL: HUAWEI,
+            ]
+        }
+    }
+
+    /**配置打包名称*/
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def fileName = variant.applicationId +
+                    "." + variant.productFlavors[0].name +
+                    ".V" + defaultConfig.versionName + ".apk"
+            def outFile = output.outputFile
+            if (outFile != null && outFile.name.endsWith('.apk')) {
+                outputFileName = fileName
+            }
+        }
+    }
+
+    //buildTypes主要就是配置发布版本和测试版本的一些配置以及混淆文件等
+    buildTypes {
+        release {
+            buildConfigField "String", "API_HOST", "${API_RELEASE_HOST}"
+            signingConfig signingConfigs.release
+            //开启混淆,删除无用代码
+            minifyEnabled true
+            //开启删除无用资源
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            buildConfigField "String", "API_HOST", "${API_TEST_HOST}"
+        }
+        dev {
+            buildConfigField "String", "API_HOST", "${API_DEV_HOST}"
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
